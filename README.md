@@ -1,1 +1,1 @@
-HDIMLaplace3DMatlab
+# Harmonic Density Interpolation (HDI) method for high-order evaluation of Laplace layer potentials in 3D
