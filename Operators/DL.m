@@ -52,7 +52,8 @@ function DLf = DLself(f,bdy)
 
                 x = bdy.Xp(q+(p-1)*ni,:,i);
 
-                C = bdy.invA(p,q,i); 
+                %C = bdy.invA(p,q,i); 
+                C = bdy.AINV(:,:,p,q,i); 
 
                 indX = bdy.loc_to_glob(p,q,i);
 

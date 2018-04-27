@@ -63,11 +63,13 @@ properties
     d3NRuvv
     d3NRvvv
     
+    AINV
+    
 end
 
 methods
     
-    function obj=cctor(obj,n,name,center,rad,save_opt)
+    function obj=cctor(obj,n,name,center,rad)
         
         srf= eval(name);
         
@@ -124,48 +126,14 @@ methods
             [obj.dXdu(:,:,j),obj.dXdv(:,:,j),obj.Nrm(:,:,j),obj.Jp(:,j)] = srf.dX(ut,vt,j);            
         end
             
-        if exist('save_opt','var') && save_opt==1
-            
-            obj.save_opt=1;
-            
-            P = Density;P = P.cctor(obj,3);
-            P.vec = [];
-            for j=1:obj.nPat            
-                P.vec = [P.vec; srf.X(ut,vt,j)];                
+        for id=1:obj.nPat
+            for p=1:obj.nPts(id)
+                for q=1:obj.nPts(id)
+                    obj.AINV(:,:,p,q,id) = obj.invA(p,q,id);
+                end
             end
-            
-            obj.dPu = P.diff(obj,'U');
-            obj.dPv = P.diff(obj,'V');
-
-            e1_e2 = cross(obj.dPu.vec,obj.dPv.vec);   % Normal vector    
-            jac = vecnorm(e1_e2,2,2) ; % Unit normal
-
-            obj.NR= Density; obj.NR= obj.NR.cctor(obj,3);
-            obj.NR.vec= e1_e2 ./ jac ; % Unit normal
-            
-            obj.d2Puu = obj.dPu.diff(obj,'U');
-            obj.d2Puv = obj.dPu.diff(obj,'V');
-            obj.d2Pvv = obj.dPv.diff(obj,'V');
-            
-            obj.d3Puuu = obj.d2Puu.diff(obj,'U');
-            obj.d3Puuv = obj.d2Puv.diff(obj,'U');
-            obj.d3Puvv = obj.d2Pvv.diff(obj,'U');
-            obj.d3Pvvv = obj.d2Pvv.diff(obj,'V');
-
-            obj.dNRu = obj.NR.diff(obj,'U');
-            obj.dNRv = obj.NR.diff(obj,'V');
-            
-            obj.d2NRuu= obj.dNRu.diff(obj,'U');
-            obj.d2NRuv= obj.dNRv.diff(obj,'U');
-            obj.d2NRvv= obj.dNRv.diff(obj,'V');
-            
-            obj.d3NRuuu= obj.d2NRuu.diff(obj,'U');
-            obj.d3NRuuv= obj.d2NRuv.diff(obj,'U');
-            obj.d3NRuvv= obj.d2NRvv.diff(obj,'U');
-            obj.d3NRvvv= obj.d2NRvv.diff(obj,'V');
-            
-        end
-                
+        end            
+           
         
         %%%               
         obj.nPtot = sum(obj.nPts.^2);
@@ -229,50 +197,7 @@ methods
       Xvvv = 0.5/h0*(X2_vv-X1_vv);
 
     end
-    
-    function [out,cA] = invAOld(obj,u,v,id) % HOSS interpolation matrix
-        [dxdu,dxdv,n] = obj.dX(u,v,id);
-        [dndu, dndv] = obj.dn(u,v,id);   
-        [d2xdu2, d2xdudv, d2xdv2] = obj.d2X(u,v,id);
-            
-         A = [1, 0, 0, 0, 0, 0, 0, 0, 0;...
-            0, dxdu(1), dxdu(2), dxdu(3), 0, 0, 0, 0, 0;...
-            0, dxdv(1), dxdv(2), dxdv(3), 0, 0, 0, 0, 0;...
-            0, n(1),n(2),n(3), 0, 0, 0, 0, 0;...
-            ...
-            0, dndu(1), dndu(2), dndu(3), ...
-            n(1)*dxdu(2) +  n(2)*dxdu(1),...
-            n(1)*dxdu(3) +  n(3)*dxdu(1),...
-            n(2)*dxdu(3) +  n(3)*dxdu(2),...
-            2*n(1)*dxdu(1) + 2*n(2)*dxdu(2) - 4*n(3)*dxdu(3),...
-            2*n(1)*dxdu(1) - 2*n(2)*dxdu(2);...
-            ...
-            0, dndv(1), dndv(2), dndv(3), ...
-            n(1)*dxdv(2) +  n(2)*dxdv(1),...
-            n(1)*dxdv(3) +  n(3)*dxdv(1),...
-            n(2)*dxdv(3) +  n(3)*dxdv(2),...
-            2*n(1)*dxdv(1) + 2*n(2)*dxdv(2) - 4*n(3)*dxdv(3),...
-            2*n(1)*dxdv(1) - 2*n(2)*dxdv(2);...
-            ...
-            0, d2xdu2(1),d2xdu2(2),d2xdu2(3),...
-            2*dxdu(1)*dxdu(2),2*dxdu(1)*dxdu(3),2*dxdu(2)*dxdu(3),...
-            2*(dxdu(1)^2 + dxdu(2)^2 - 2*dxdu(3)^2), 2*(dxdu(1)^2 - dxdu(2)^2);
-            ...
-            0, d2xdv2(1),d2xdv2(2),d2xdv2(3),...
-            2*dxdv(1)*dxdv(2),2*dxdv(1)*dxdv(3),2*dxdv(2)*dxdv(3),...
-            2*(dxdv(1)^2 + dxdv(2)^2 - 2*dxdv(3)^2), 2*(dxdv(1)^2 - dxdv(2)^2);...
-            ...
-            0, d2xdudv(1),d2xdudv(2),d2xdudv(3),...
-            dxdu(1)*dxdv(2) + dxdv(1)*dxdu(2),...
-            dxdu(1)*dxdv(3) + dxdv(1)*dxdu(3),...
-            dxdu(2)*dxdv(3) + dxdv(2)*dxdu(3),...
-            2*(dxdu(1)*dxdv(1) + dxdu(2)*dxdv(2) -2*dxdu(3)*dxdv(3)),...
-            2*(dxdu(1)*dxdv(1) - dxdu(2)*dxdv(2))];
-        
-            cA = cond(A);            
-            out = inv(A);                 
-     end
-%     
+    %     
      function [out,cA,A] = invA(obj,p,q,id) % HDI interpolation matrix
          u = obj.chebGrid(p);
          v = obj.chebGrid(q);

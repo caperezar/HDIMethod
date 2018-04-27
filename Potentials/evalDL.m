@@ -92,7 +92,8 @@ if ~isempty(ind)
 
         p = 1+(indX0-q)/n0;
         
-        C = bdy.invA(p,q,idX0);
+        %C = bdy.invA(p,q,idX0);
+        C = bdy.AINV(:,:,p,q,idX0);
 
         locX0 =bdy.loc_to_glob(p,q,idX0);  
         
